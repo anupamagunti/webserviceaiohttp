@@ -3,38 +3,38 @@ import aiohttp
 
 from aiohttp import web
 
-from gidgethub import routing, sansio
-from gidgethub import aiohttp as gh_aiohttp
+#from gidgethub import routing, sansio
+#from gidgethub import aiohttp as gh_aiohttp
 
 routes = web.RouteTableDef()
 
-router = routing.Router()
+#router = routing.Router()
 
-@router.register("issues", action="opened")
-async def issue_opened_event(event, gh, *args, **kwargs):
-    """ Whenever an issue is opened, greet the author and say thanks."""
-
-    url = event.data["issue"]["comments_url"]
-    author = event.data["issue"]["user"]["login"]
-
-    message = f"Thanks for the report @{author}! I will look into it ASAP! (I'm a bot)."
-    print(f"message: @{message}")
-    #await gh.post(url, data={"body": message})
-
-@router.register("pull_request", action="opened")
-async def pull_request_opened_event(event, gh, *args, **kwargs):
-    """    Whenever an pull request is opened, lets see what to do    """
-    print("Testing 1")
-    url = event.data["pull_request"]
-    print(f"Event: @{url}")
+#@router.register("issues", action="opened")
+#async def issue_opened_event(event, gh, *args, **kwargs):
+#    """ Whenever an issue is opened, greet the author and say thanks."""
+#
+#    url = event.data["issue"]["comments_url"]
+#    author = event.data["issue"]["user"]["login"]
+#
+#    message = f"Thanks for the report @{author}! I will look into it ASAP! (I'm a bot)."
+#    print(f"message: @{message}")
 #    #await gh.post(url, data={"body": message})
 
-@router.register("pull_request_review_comment", action="created")
-async def pul_request_review_comment_created_event(event, gh, *args, **kwargs):
-    """   Whereever there is a PR comment, lets see what to do   """
+#@router.register("pull_request", action="opened")
+#async def pull_request_opened_event(event, gh, *args, **kwargs):
+#    """    Whenever an pull request is opened, lets see what to do    """
+#    print("Testing 1")
+#    url = event.data["pull_request"]
+#    print(f"Event: @{url}")
+#    #await gh.post(url, data={"body": message})
+
+#@router.register("pull_request_review_comment", action="created")
+#async def pul_request_review_comment_created_event(event, gh, *args, **kwargs):
+#    """   Whereever there is a PR comment, lets see what to do   """
 #   print(f"Event: @{event}")
-    comment = event.data["comment"]
-    print(f"Comment: @{comment}")
+#    comment = event.data["comment"]
+#    print(f"Comment: @{comment}")
 
 @routes.post("/")
 async def main(request):
@@ -43,11 +43,12 @@ async def main(request):
     secret = os.environ.get("GH_SECRET")
     oauth_token = os.environ.get("GH_AUTH")
 
-    event = sansio.Event.from_http(request.headers, body, secret=secret)
-    async with aiohttp.ClientSession() as session:
-        gh = gh_aiohttp.GitHubAPI(session, "anupamagunti",
-                                  oauth_token=oauth_token)
-        await router.dispatch(event, gh)
+    #event = sansio.Event.from_http(request.headers, body, secret=secret)
+    #async with aiohttp.ClientSession() as session:
+    #    gh = gh_aiohttp.GitHubAPI(session, "anupamagunti",
+    #                              oauth_token=oauth_token)
+    #    await router.dispatch(event, gh)
+    print(f'Event = @{body}')
     return web.Response(status=200)
 
 if __name__ == "__main__":
