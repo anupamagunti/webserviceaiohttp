@@ -1,6 +1,8 @@
 import os
 import aiohttp
 import requests
+import pdb
+import json 
 
 from aiohttp import web
 
@@ -45,14 +47,14 @@ bitbucket_headers = {"Authorization": f"Bearer {bitbucket_api_token}", "X-Atlass
 
 @routes.post("/")
 async def main(request):
-    body = await request.text()
-
-    secret = os.environ.get("GH_SECRET")
-    oauth_token = os.environ.get("GH_AUTH")
-
-    data = body
-    print(f'Event = @{data}')
+    data = await request.json()
+    #data = await json.loads(request.text)
+    print(f'Event = {json.dumps(data)}')
     bot_slug = requests.get(url=f'{base_bitbucket_url}/plugins/servlet/applinks/whoami', headers=bitbucket_headers).text
+    #bot_slug = requests.get(url=f'{base_bitbucket_url}/plugins/servlet/applinks/whoami').text
+    print(f'URL:{base_bitbucket_url}/plugins/servlet/applinks/whoami')
+    print(f'headers:{bitbucket_headers}')
+    #bot_slug = data.get('actor', {}).get('name')
     project = data.get('pullRequest', {}).get('toRef').get('repository').get('project').get('key')
     repo = data.get('pullRequest', {}).get('toRef').get('repository').get('name')
     pr_id = data.get('pullRequest', {}).get('id')
@@ -66,9 +68,10 @@ async def main(request):
     target_repo_id = data.get('pullRequest', {}).get('toRef').get('repository').get('id')
     target_branch = data.get('pullRequest', {}).get('toRef').get('displayId')
     base_pr_url = f'{base_bitbucket_api_url}/projects/{project}/repos/{repo}/pull-requests/{pr_id}'
-    
+    source_branch = data.get('pullRequest', {}).get('fromRef').get('displayId').split('/')[0]
+        
     def is_pr_mergable(base_pr_url, headers):
-
+        pdb.set_trace()
         merge_status_url = f'{base_pr_url}/merge'
         merge_status = requests.get(merge_status_url, headers=headers).json()
 
@@ -80,7 +83,7 @@ async def main(request):
             return False
 
     def approve_pr(base_pr_url, headers, slug):
-
+        pdb.set_trace()
         approval_url = f'{base_pr_url}/participants/{slug}'
         json_body = {'status': 'APPROVED'}
         r = requests.put(url=approval_url, headers=headers, json=json_body)
@@ -88,20 +91,24 @@ async def main(request):
         return r
 
     def merge_pr(base_pr_url, pr_version, headers):
-
+        pdb.set_trace()
         merge_url = f'{base_pr_url}/merge?version={pr_version}'
         r = requests.post(url=merge_url, headers=headers)
         return r
 
-    if data.get('eventKey', {}) == 'pr:comment:added':
+    if source_branch == 'release' and target_branch == 'master':
+        if data.get('eventKey', {}) == 'pr:comment:added':
 
-        comment_text = data.get('comment', {}).get('text')
-        print(f"comment_text = @{comment_text}")
-        if comment_text.strip().casefold() == '/approve'.casefold():
-            r = approve_pr(base_pr_url=base_pr_url, headers=bitbucket_headers, slug=bot_slug)
-            is_mergable = is_pr_mergable(base_pr_url=base_pr_url, headers=bitbucket_headers)
-            if is_mergable:
-                merge_pr(base_pr_url=base_pr_url, pr_version=pr_version, headers=bitbucket_headers)
+            comment_text = data.get('comment', {}).get('text')
+            print(f"comment_text = {comment_text}")
+            pdb.set_trace()
+            if comment_text.casefold() == '/approve merge UAT deploy'.casefold():
+                r = approve_pr(base_pr_url=base_pr_url, headers=bitbucket_headers, slug=bot_slug)
+                is_mergable = is_pr_mergable(base_pr_url=base_pr_url, headers=bitbucket_headers)
+                if is_mergable:
+                    merge_pr(base_pr_url=base_pr_url, pr_version=pr_version, headers=bitbucket_headers)
+    else:
+        print(f'Silently ignoring the event as the merge is not between release->master')
                 
    
     return web.Response(status=200)
